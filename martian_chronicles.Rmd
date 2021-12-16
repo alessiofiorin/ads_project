@@ -1,0 +1,966 @@
+---
+title: "The Martian Chronicles"
+subtitle: "A deep dive in a science fiction novel"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+```{r, message=F, warning=F}
+library(magick) # for images
+library(dplyr)
+library(stringr)
+library(wordcloud)
+library(tidyverse)
+library(tidytext)
+library(wordcloud)
+library(plotly)
+library(widyr)
+library(ggraph)
+library(tidygraph)
+library(SnowballC)
+library(igraph)
+library(resolution)
+library(corrplot)
+library(RColorBrewer)
+```
+
+## A brief introduction
+
+The Martian Chronicles is a science fiction fix-up novel written by Ray Bradbury in 1950.
+
+The novel is written as a chronicle and each story is a chapter within an overall chronological ordering of the plot. 
+
+It was not specifically written to be a single since its creation as a novel was suggest by a publisher's editor after most of the stories had already appeared.
+
+The book treats the exploration and settlement of Mars by Americans leaving a troubled Earth which it will be devastated by a nuclear war.
+
+```{css, echo=FALSE}
+.left_image_circle{
+  float: left;
+  width: 100px;
+  height: 100px;
+  background-image: url("ray_bradbury.jpg");
+  background-size: 100px;
+  border-radius: 50%;
+  margin-right: 30px;
+}
+
+.description{
+  position: relative;
+  top: 20px;
+}
+
+```
+
+<div class="left_image_circle">
+</div>
+
+<div class="description">
+"Bradbury is an authentic original." - *Time* magazine
+</div>
+
+## The Martian Chronicles book
+
+```{r, echo=FALSE, fig.align="center"}
+img = image_read("cover.jpg")
+image_scale(image_scale(img,"70%"),"70%")
+```
+
+## The Martian Chronicles book
+
+The analyzed version book is the trade paperback edition published by Bantam Books with illustrations by Ian Miller. 
+
+It is composed of 26 chapter. Note that the complete version has 28 chapters, but it is not available since two chapters weren't considered for this novel.
+
+These chapters are:
+
+* **November 2002: The Fire Balloons** 
+* **May 2003: The Wilderness**
+
+The first one was omitted for the ambiguous religious interpretation and the second one since it seems out of context.
+
+
+## Word frequency
+
+
+Let's use **wordcloud** package in order to create a representation of the most frequency words used in The Martian Chronicles. 
+
+The word frequencies are explained with this pattern: if the word has a large font size and a significant bold type, it means that it has an high frequency. 
+
+It has a circle depiction, where the word with the highest frequency is in the centre. 
+
+After that, the words with a similar frequency, besides the alike font size and bold type, they have also the same color.
+
+## Word frequency
+
+```{r , echo=FALSE, collapse=TRUE, warning=FALSE,message=FALSE}
+#First, we want to organize the book in a tibble composed of a tibble with two column: chapter and line row. For having the tidy book, we tokenize, so we have one word per row and then we remove the stop words. At this point, let plot the word frequency
+
+
+indexes= read.delim("Ray Bradbury - The Martian Chronicles (1979, Bantam Books).txt", encoding="UTF-8", skip=45, nrows=26)
+
+text = read.delim("Ray Bradbury - The Martian Chronicles (1979, Bantam Books).txt", encoding="UTF-8", skip=109)
+text = text[1:(length(text[,1])-2), 1]
+
+idx=1
+
+
+book <- tibble(
+  chapter = character(),
+  line_row = character()
+)
+
+for (i in 1:length(text)){
+  
+  #print(text[i,1])
+  if(idx>length(indexes[,1])){
+    book = book %>% add_row(chapter = indexes[idx-1, 1], line_row = text[i])
+  }else{
+    #print(i)  
+    if (str_detect(indexes[idx, 1],text[i])){
+      #print(indexes[idx, 1])
+      idx=idx+1
+    }else{
+      book = book %>% add_row(chapter = indexes[idx-1, 1], line_row = text[i])
+    }
+  }
+  
+}
+
+# tokenize: one work per row
+tidy_book <- book %>%
+  unnest_tokens(word, line_row) %>%
+  #group_by(chapter) %>%
+  #mutate(section = row_number() %/% 120) %>%
+  #filter(section > 0) %>%
+  arrange(factor(chapter, levels = indexes[,1])) 
+
+
+sections_value = c(1)
+chapter_value=tidy_book$chapter[1]
+actual_value=1
+for (i in 2:length(tidy_book$chapter)){
+  
+  if((tidy_book$chapter[i]!=chapter_value) || ((i%%120)==1 && tidy_book$chapter[i]==chapter_value)){
+    actual_value=actual_value+1
+  }
+  
+  if(tidy_book$chapter[i]!=chapter_value){
+    chapter_value=tidy_book$chapter[i]
+  }
+ 
+  sections_value=c(sections_value, actual_value)
+  
+}
+
+tidy_book$section = sections_value
+
+
+
+
+# remove stop words
+tidy_book <- tidy_book %>%
+  anti_join(stop_words)
+
+
+# word frequency
+# tidy_book %>%
+#   filter(word!="it's" || word!="it's" || word!="i'm")  %>%
+#   count(word, sort = TRUE) 
+
+# plot word frequency
+# tidy_book %>%
+#   count(word, sort = TRUE) %>%
+#   filter(n > 100) %>%
+#   mutate(word = reorder(word, n)) %>%
+#   ggplot(aes(word, n)) +
+#   geom_col() +
+#   xlab(NULL) +
+#   coord_flip()
+
+set.seed(1234)
+tidy_book %>%
+  anti_join(stop_words) %>%
+  filter(!grepl('’', word)) %>%
+  count(word) %>%
+  # evaluate an R expression in an environment constructed from data
+  with(wordcloud(words = word, freq = n, min.freq = 1, max.words=50, random.order=FALSE, rot.per=0.35, colors=brewer.pal(8, "Dark2")))
+
+
+
+
+```
+
+## Word frequency
+
+The highest frequency word is <span style="color:#4B554B">**captain**</span>, and it is normal since the captain is who drives the <span style="color:#87DC4E">**rocket**</span> and manages the expeditions between <span style="color:#754545">**Earth**</span> and <span style="color:#87DC4E">**Mars**</span>. 
+
+Moreover, the <span style="color:#4B554B">**captain**</span> is one of the most important characters since it performs the most important decisions in order to success the goal of the expedition. 
+
+Note that the <span style="color:#4B554B">**captain**</span> changes depending on the expedition, so it is not the same individual for all the chapters.
+
+
+## Bigram analysis
+
+Let's analyse the bigrams in order to find the main characters in The Martian Chronicles. We will treat bigrams as terms, in the same way that we analyzed individual words.
+
+We can find the characters appearing in the chapters, thus we can understand if some chapters are **linked** together. 
+
+Remember that The Martian Chronicles consists of short stories previously published, which the common context is the exploration and colonization of **Mars** by **Americans** and the explicit common thread is the **time series** expressed on the chapters.
+
+## Bigram analysis
+
+```{css, echo=FALSE}
+.main_centered {
+  position: absolute;
+  top: 120px;
+}
+```
+
+<div class="main_centered">
+```{r, echo=FALSE, collapse=TRUE, warning=FALSE,message=FALSE, fig.height=6, fig.width=7}
+book_bigrams <- book %>%
+  unnest_tokens(bigram, line_row, token = "ngrams", n = 2)
+
+#book_bigrams
+
+# count bigrams
+# book_bigrams %>%
+#   count(bigram, sort = TRUE)
+
+# remove stop words
+bigrams_separated <- book_bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+bigrams_filtered <- bigrams_separated %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+
+# new bigram counts
+bigram_counts <- bigrams_filtered %>% 
+  count(word1, word2, sort = TRUE)
+
+# bigram_counts
+
+# back to bigrams
+bigrams_united <- bigrams_filtered %>%
+  unite(bigram, word1, word2, sep = " ")
+
+# bigrams_united
+
+# bigrams_united %>% 
+#   distinct() %>%
+#   group_by(bigram) %>%
+#   count(bigram, sort=TRUE)
+
+
+
+bigrams_for_plot = bigrams_united %>% 
+  filter(bigram=="captain wilder" | bigram=="captain john" | bigram=="john black" | bigram=="samuel teece" | bigram=="sam parkhill" | bigram=="walter gripp"| bigram=="captain black" | bigram=="captain williams" | bigram=="miss blunt" | bigram=="nathaniel york") %>%
+  count(bigram, chapter, sort=TRUE) %>%
+  arrange(factor(chapter, levels = indexes[,1]))
+
+xform <- list(categoryorder = "array",
+              categoryarray = unique(bigrams_for_plot$chapter))
+
+bigrams_plot <- plot_ly(bigrams_for_plot, x = ~chapter, y = ~n, type = 'bar', color = ~bigram)
+bigrams_plot <- bigrams_plot %>% layout(yaxis = list(title = 'number of bigrams'), barmode = 'stack', xaxis = xform)
+
+bigrams_plot
+
+
+#make_matrix <- function(df,rownames = NULL){
+ # my_matrix <-  as.matrix(df)
+#  if(!is.null(rownames))
+#    rownames(my_matrix) = rownames
+#  my_matrix
+#}
+
+#my_matrix <- make_matrix(select(my_tibble,-row_name),
+   #                       pull(my_tibble,row_name))
+
+
+
+```
+</div>
+
+## Bigram analysis
+
+The character appeared in more chapters is **captain Williams**, the smart leader of the second expedition. 
+
+He comes out in these chapters:
+
+* August 1999: THE EARTH MEN
+* March 2000: THE TAXPAYER
+* April 2000: THE THIRD EXPEDITION
+* June 2001: --AND THE MOON BE STILL AS BRIGHT
+
+These four chapters are consecutive and they are located at the beginning of the book.
+
+## Bigram analysis
+
+The chapter with the most number of bigrams is **April 2000: THE THIRD EXPEDITION**. 
+
+Besides, we can note that three bigrams refer to the same character, which it is the **captain John Black**, the leader of the third expediction:
+
+* <span style="color:#ff80df">john black</span>
+* <span style="color:#ff9900">captain john</span>
+* <span style="color:#00b386">captain black</span>
+
+He appears in two consecutive chapters: April 2000: THE THIRD EXPEDITION and June 2001: --AND THE MOON BE STILL AS BRIGHT.
+
+## Pairwise correlation
+
+Bigram analysis is a useful tool to explore pairs of adjacent words. In our case study, it is used to find the most important characters of the book. 
+
+Nevertheless, we are also interested to find words that tend to appear in particular sections, even if they don't occur next to each other as bigrams.
+
+## Pairwise correlation
+
+Let's pick four interesting words with the help of the previously word frequency analysis, which they are: captain, Earth, Mars and martian. We will find the words most associated with them.
+
+```{r, echo=FALSE, collapse=TRUE, warning=FALSE,message=FALSE}
+
+facet_bar <- function(df, y, x, by, nrow = 2, ncol = 2, scales = "free") {
+  mapping <- aes(y = reorder_within({{ y }}, {{ x }}, {{ by }}), 
+                 x = {{ x }}, 
+                 fill = {{ by }})
+  
+  facet <- facet_wrap(vars({{ by }}), 
+                      nrow = nrow, 
+                      ncol = ncol,
+                      scales = scales) 
+  
+  ggplot(df, mapping = mapping) + 
+    geom_col(show.legend = FALSE) + 
+    scale_y_reordered() + 
+    facet + 
+    ylab("")
+} 
+
+word_cors <- tidy_book %>% 
+  add_count(word) %>% 
+  filter(n >= 20) %>% 
+  select(-n) %>%
+  pairwise_cor(word, section, sort = TRUE)
+
+
+word_cors %>%
+  filter((item1 %in% c("captain", "earth", "mars", "martian")), !grepl('’', item2) ) %>%
+  group_by(item1) %>%
+  top_n(6) %>%
+  ungroup() %>%
+  facet_bar(y = item2, x = correlation, by = item1)
+
+
+```
+
+## Pairwise correlation
+
+**Captain** term is associated with the name and surname of the main characters, after that **Earth** and **Mars** with words around the the settlement and the aim of the exploration.
+
+Moreover, the **martian** term is associated with *Tomás* Gomez, which he appears in the chapter August 2002: Night Meeting and he met several martians and there are some dialogs between them. 
+
+
+## Pairwise correlation graph
+Let's visualize the network in order to see the overall correlation pattern. Remember that the relationships are symmetrical, rather than directional as in bigrams. 
+
+Besides, let's highlight in <span style="color:#4D90CE">blue</span> three of the words picked previously in order to understand if they are also some of the most correlated words. 
+
+The other words are painted in <span style="color:#E97451">orange</span>.
+
+
+## Pairwise correlation graph
+
+```{r, echo=FALSE, collapse=TRUE, warning=FALSE,message=FALSE}
+
+
+#stemming_word_cors <- word_cors %>%
+#  mutate(item1 = wordStem(item1), item2 = wordStem(item2)) # stemming
+
+
+
+g = word_cors %>%
+  filter(!( grepl('’', item1) &&  grepl('’', item2)), correlation > .21) %>%
+  as_tbl_graph() %>%
+  ggraph(layout = "fr") 
+
+
+
+mcolor <- g$data %>% mutate(mcolor = if_else(name %in% c("captain", "mars", "martian", "earth"), 
+                                     "#4D90CE", "#E97451")) %>% select(mcolor)
+
+a <- grid::arrow(type = "closed", length = unit(.1, "inches"))
+
+g +
+  
+  geom_node_text(aes(label = name), repel = TRUE
+                 , colour=mcolor$mcolor) +
+  geom_edge_link(aes(edge_alpha = correlation), show.legend = FALSE, arrow = a) +
+  geom_node_point(colour=mcolor$mcolor, size = 5)+
+  theme_void() + theme(legend.position="none")
+  
+```
+ 
+## Pairwise correlation graph
+
+The graph contains a giant component, which it is a connected component containing a significant part of all the nodes. 
+
+Note that the only one of the previously selected words is **captain**, which it is interconnected with several words belonging to the pairwise correlation graph.
+
+Let's use some centrality measurements in order to find the most interesting words on the pairwise correlation graph. 
+
+We will use the **betweenness centrality** and the **PageRank centrality**.
+
+## Centrality measurements
+
+**Betweenness centrality** measures the extent to which a vertex lies on paths between other vertices. Vertices with high betweenness may have considerable influence within a network by virtue of their control over information passing between others. 
+
+**PageRank centrality** is based on PageRank, an algorithm used by Google Search where its thesis consists of claiming that a node is important if it linked from other important and link parsimonious nodes or if it is highly linked.
+
+
+## Centrality measurements
+
+Let's apply the betweeness centrality.
+
+```{r, echo=FALSE, include=FALSE, collapse=TRUE, warning=FALSE}
+
+
+word_cor_g <- word_cors %>%
+  rename(word1 = item1, word2 = item2, n = correlation) %>%
+  mutate(n = round(n*100)) %>%
+  filter(n > 18)
+
+#Betweenness centrality
+g <- word_cor_g %>%
+  as_tbl_graph()
+v <- as_tibble(g) %>%
+  mutate(v = row_number())
+b <- betweenness(g)
+names(b) = 1:vcount(g)
+betweenness <- data.frame(score = round(b, 2)) %>%
+  mutate(v = row_number()) %>%
+  full_join(v) %>%
+  arrange(desc(score)) %>%
+  mutate(word = name) %>%
+  select(word, score) %>%
+  head()
+
+#PageRank centrality
+pr <- page_rank(g)
+pagerank <- data.frame(score = pr$vector) %>%
+  arrange(desc(score)) %>%
+  head()
+
+```
+
+```{r , echo=FALSE, warning=FALSE, collapse=FALSE}
+betweenness %>% rmarkdown::paged_table()
+
+```
+
+## Centrality measurements
+
+Let's apply the PageRank centrality.
+
+```{r , echo=FALSE, warning=FALSE, collapse=FALSE}
+pagerank %>% mutate(score = round(score, 5)) %>% rmarkdown::paged_table()
+
+```
+
+## Centrality measurements
+
+In addition to be the most used word in the book, **captain** is also an important word since it is on the top of the rankings in both the centrality measurements chosen. This is due since the **captain** is the main character in of both Martian's Chronicles.
+
+Let's focus now on the **teece** term which it appears on the top two of the rankings in both centrality measurements chosen. 
+
+Note that this term is not one of the most appeared word in the book, so it is not true that whether a word is very used, then it is important. 
+
+```{r}
+tidy_book %>% filter(word=="captain" | word=="teece") %>% count(word) %>% rmarkdown::paged_table()
+```
+
+## Centrality measurements
+
+The **teece** term refers to Samuel Teece, a racist and terrorist white store owner which he appears in the chapter **June 2003: WAY IN THE MIDDLE OF THE AIR**. 
+
+This chapter is focused on a contemporary political problem, the racism, prejudice, and discrimination in America. 
+
+Remember that the historical time period is before the Civil Rights movement. This chapter in some versions of the book is omitted for racial language (i.e. use of n-word).
+
+
+"Bradbury is one of the very few authors who dared to consider the effects and consequences of race in America at a time when racism was sanctioned by the culture." - Isiah Lavender III
+
+
+
+## Community detection
+
+"Community detection is the problem of finding the natural divisions of a network into groups of vertices, called communities, such that there are many edges within groups and few edges between groups."
+
+Let's focus the detection on *four* important words selected using the previously centrality measurements, which they are:
+
+* captain
+* teece
+* car
+* elma
+
+## Community detection
+
+*Who is Elma?*
+
+Elma is Sam Parkhill's wife. Her husband wants to go to Mars just to set up a hot dog stand, but this claim seems so strange. 
+
+Emma knows the truth about him, but we don't ever know what Elma wants, why she married Sam, how she feels about Mars. 
+
+Note that the relationship between them is really weird since Sam menaces to kill her.
+
+## Community detection
+
+```{css, echo=FALSE}
+.centered {
+  position: absolute;
+  top: 0px;
+}
+```
+
+<div class="centered">
+```{r, echo=FALSE, warning=FALSE, fig.width=8, fig.height=8}
+g <- word_cor_g %>%
+  filter((word1 == "car" | word2 == "car" | word1 == "teece" | word2 == "teece" | word1 == "elma" | word2 == "elma"| word1 == "captain" | word2 == "captain") & !grepl('’', word1) & !grepl('’', word2) )
+G = graph_from_data_frame(g)
+community = cluster_resolution(G, t = 1.5) # The number of communities typically decreases as the resolution parameter (t) grows.
+coords = layout_with_fr(G) 
+
+plot(G, vertex.color = membership(community), layout = coords)
+```
+</div>
+
+## Correlation between chapters
+
+Previously we found the most used bigrams which they were the main characters in the book. 
+
+Let's understand if there is something more tied between these chapters than just the presence of common characters.
+
+Thus, let's visualize the **correlation plot** of the eight chapter select during this previous phase.
+
+
+## Correlation between chapters
+
+```{r , echo=FALSE, collapse=TRUE, warning=FALSE, fig.width=5.5, fig.height=5.5, fig.align='center'}
+
+
+frequency <- tidy_book %>%
+  count(chapter, word, sort = TRUE) %>%
+  group_by(chapter) %>%
+  mutate(proportion = n / sum(n)) %>% 
+  select(-n) %>% 
+  spread(chapter, proportion) 
+
+
+frequency = frequency[, c(-1)]
+frequency = frequency[,c(14,6,20, 2,18, 1,22,5)]
+
+frequency_matrix = cor(frequency, use = "pairwise.complete.obs")
+
+rownames(frequency_matrix)=sub(":.*","",labels(frequency_matrix)[[2]])
+colnames(frequency_matrix)=sub(":.*","",labels(frequency_matrix)[[2]])
+
+#plot the corr
+
+COL2 = function(diverging = c('RdBu', 'BrBG', 'PiYG', 'PRGn', 'PuOr', 'RdYlBu'),
+                n = 200) {
+
+  diverging = match.arg(diverging)
+
+  colors = switch(
+    diverging,
+    RdBu = c('#67001F', '#B2182B', '#D6604D', '#F4A582', '#FDDBC7', '#FFFFFF',
+             '#D1E5F0', '#92C5DE', '#4393C3', '#2166AC', '#053061'),
+    BrBG = c('#543005', '#8C510A', '#BF812D', '#DFC27D', '#F6E8C3', '#FFFFFF',
+             '#C7EAE5', '#80CDC1', '#35978F', '#01665E', '#003C30'),
+    PiYG = c('#8E0152', '#C51B7D', '#DE77AE', '#F1B6DA', '#FDE0EF', '#FFFFFF',
+             '#E6F5D0', '#B8E186', '#7FBC41', '#4D9221', '#276419'),
+    PRGn = c('#40004B', '#762A83', '#9970AB', '#C2A5CF', '#E7D4E8', '#FFFFFF',
+             '#D9F0D3', '#A6DBA0', '#5AAE61', '#1B7837', '#00441B'),
+    PuOr = c('#7F3B08', '#B35806', '#E08214', '#FDB863', '#FEE0B6', '#FFFFFF',
+             '#D8DAEB', '#B2ABD2', '#8073AC', '#542788', '#2D004B'),
+    RdYlBu = c('#A50026', '#D73027', '#F46D43', '#FDAE61', '#FEE090', '#FFFFFF',
+               '#E0F3F8', '#ABD9E9', '#74ADD1', '#4575B4', '#313695')
+  )
+
+  return(colorRampPalette(colors)(n))
+
+}
+
+
+frequency_matrix %>%
+  corrplot(method = 'circle', type = 'lower', insig='blank',
+         addCoef.col ='black', number.cex = 0.8, order = 'AOE', diag=FALSE)
+  
+
+
+
+
+```
+
+## Correlation between chapters
+
+There is a high correlation between these chapters:
+
+* August 1999: THE EARTH MEN 
+* April 2000: THE THIRD EXPEDITION
+* June 2001: --AND THE MOON BE STILL AS BRIGHT
+
+These chapters describe three different expeditions to Mars done by different american crews, leaded by dissimilar captains. These expeditions have in **common** the **ending**: they failed since every american crew was killed by the martians, included the captain of each expedition.
+
+After that, the first two chapters named previously also have an high correlation with this chapter: April 2026: THE LONG YEARS.
+
+## Correlation between chapters
+
+*August 1999: THE EARTH MEN & April 2026: THE LONG YEARS*
+
+The common tie is the insanity. In chapter August 1999: THE EARTH MEN, some martianss became vulnerable since using their telepathy against the humans have an unintended consequence of mental insanity. 
+
+In the other chapter, humans use robots to have around them their family lost in war, but this choice brought a sort of madness on them, since they can't accept the death of their loved ones.
+
+## Correlation between chapters
+
+*April 2000: THE THIRD EXPEDITION & April 2026: THE LONG YEARS*
+
+They have in common the concept of mask. In chapter April 2000: THE THIRD EXPEDITION, martians masked themself as crew's human relatives in order to swindle and then kill the crew, included the captain. 
+
+In the other chapter, humans used robots as tools for having in "life" their family, lost during the war. Thus, the robots are used to placate their nostalgia.
+
+## Sentiment analysis
+
+Let’s address the topic of opinion mining in order to under the sentiments and emotions in the book. 
+
+We know that the book doesn't have so positive parts, since the **exploration** and **settlement** of Mars are the common contents.
+
+Let's use these general-purpose lexicons:
+
+* **bing**: used to positive and negative sentiments
+
+* **nrc**: useful to recognize eight basic emotions
+
+## Sentiment analysis
+
+Let's find the 10 most frequent words with sentiment content:
+
+```{r, echo=FALSE, collapse=TRUE, warning=FALSE,message=FALSE}
+book_sentiment <- tidy_book %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(chapter, sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative)
+
+#book_sentiment
+
+
+# lexicons
+#get_sentiments("bing")
+#get_sentiments("afinn")
+#get_sentiments("nrc")
+
+bing_word_counts <- tidy_book %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+
+#bing_word_counts
+
+p = bing_word_counts %>%
+  top_n(10) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  scale_fill_manual(values=c("#f81f1f", "#6ebaff"))+
+  labs(y = "Contribution to sentiment",
+       x = NULL) +
+  coord_flip()
+
+font = list(
+  size = 15,
+  color = "white"
+)
+label = list(
+  bordercolor = "transparent",
+  font = font
+)
+
+ggplotly(p, tooltip = c("text")) %>%
+  config(displayModeBar = FALSE) %>%
+  style(hoverlabel = label) %>%
+  layout(font = font,
+         yaxis = list(fixedrange = TRUE),
+         xaxis = list(fixedrange = TRUE))
+
+```
+
+## Sentiment analysis
+
+The *most used* sentiment word is **dead**, which it is obviously a negative word. This is due since the invasions and the nuclear war caused a lot of deceaseds. 
+
+The second sentiment most used word is **hot**, which in a sentimental context it is a positive word. 
+
+Nevertheless in the book, it is usually used to indicate a high thermal state or as part of the bigram hot dog. 
+
+Thus, **hot** is a *false friend*. 
+
+## Sentiment analysis
+
+Let's find the most negative chapter:
+
+```{r, echo=FALSE, collapse=TRUE, warning=FALSE,message=FALSE}
+bingnegative <- get_sentiments("bing") %>% 
+  filter(sentiment == "negative")
+
+bingpositive <- get_sentiments("bing") %>% 
+  filter(sentiment == "positive")
+
+wordcounts <- tidy_book %>%
+  group_by(chapter) %>%
+  summarize(words = n())
+
+most_frequent_sentiment_words <- function(bing_kind, sentimentwords, famous_sentiment_chapter, best_color, normal_color){
+  
+  count_sentiment_words_per_chapter = tidy_book %>%
+    semi_join(bing_kind,by=c("word")) %>%
+    group_by(chapter) %>%
+    summarize(sentimentwords = n()) %>%
+    left_join(wordcounts, by = c("chapter")) %>%
+    mutate(ratio = sentimentwords/words) %>%
+    ungroup() %>%
+    arrange(factor(chapter, levels = indexes[,1])) %>%
+    mutate(id_chapter = row_number()) 
+  
+  #print(count_sentiment_words_per_chapter)
+  
+  p <- count_sentiment_words_per_chapter %>%
+  ggplot(aes(id_chapter, ratio, text = paste0("Chapter: ", chapter),
+                             fill=factor(ifelse(chapter==famous_sentiment_chapter,"Best","Normal")))) +
+  geom_col(show.legend = FALSE) +
+  labs(x = "\nChapter", y = "Ratio") +
+  theme_classic()+
+  scale_x_continuous(breaks = c(0:9)*4)+
+  scale_fill_manual(values = c(best_color,normal_color)) +
+  theme(legend.position = "none",
+        text = element_text(family = "Arial"),
+        axis.text.x = element_text(vjust = 0.5))
+
+  ggplotly(p, tooltip = c("text")) %>%
+    config(displayModeBar = FALSE) %>%
+    style(hoverlabel = label) %>%
+    layout(font = font,
+           xaxis = list(fixedrange = TRUE),
+           yaxis = list(fixedrange = TRUE))
+  
+}
+
+
+
+```
+
+```{r}
+most_frequent_sentiment_words(bingnegative,negativewords, "August 2001: THE SETTLERS", "#f81f1f", "#f5a5a5" )
+```
+
+## Sentiment analysis
+
+The most negative chapter is August 2001: THE SETTLERS.
+
+The chapter explains the history of the first settlers, but they were actually lonely ones, because they fell already bad at the beginning of the trip, since they start to have regrets and they were filled with loneliness and nostalgia. 
+
+```{r, echo=FALSE, collapse=TRUE, warning=FALSE}
+tidy_sentiment <- tidy_book %>% 
+  inner_join(get_sentiments("nrc"), by="word") %>%
+  count(chapter, sentiment, sort = TRUE) %>%
+  arrange(sentiment) 
+
+chapters_sentiment_numbers <- aggregate(n ~ chapter+sentiment, tidy_sentiment,  sum)
+
+#negative
+chapters_sentiment_numbers %>% 
+  filter(grepl("August 2001",chapter) & (sentiment=="anger" | sentiment=="disgust" | sentiment=="fear" | sentiment=="sadness")) %>%  select(-chapter) %>%
+  arrange(-n) %>% rmarkdown::paged_table()
+```
+## Sentiment analysis
+
+Let's find the most positive chapter:
+
+```{r}
+most_frequent_sentiment_words(bingpositive,positivewords, "October 2002: THE SHORE", "#6ebaff", "#c6e1fa" )
+```
+
+## Sentiment analysis
+
+The most positive chapter is October 2002: THE SHORE. 
+
+This chapter concerns the transportation of humans to Mars by a lot of rockets in order to escape from the nuclear war. 
+
+Several lifes were saved thanks to this carriage by rockets.
+
+Nevertheless, the rockets came from the USA, so only american humans were saved from the war.
+
+## Topic modeling
+
+A topic model is used for discovering the abstract topics that occur in a collection of documents, so the chapters of the book. 
+
+Topic modeling will help us to discovery the hidden semantic structure of the chapters where the topics are clusters of similar words.
+
+## Topic modeling
+
+Let's use LDA is a method for fitting a topic model. It handles each chapter as a mixture of topics, and each topic as a mixture of words. 
+
+For each chapter we will select the most present topic, in order to understand easily the main topic for each of them.
+
+
+The LDA model has two principles:
+
+* every topic is a mixture of words
+
+* each document is a mixture of topics
+
+## Topic modeling
+
+*Every topic is a mixture of words*
+
+This principle provides a method for extracting the per-topic-per-word probabilities, called **beta** from the model. 
+
+Let's extract three topics from the chapters and then let's 10 words that are the most common in each topic.
+
+```{r, echo=FALSE, collapse=TRUE, warning=FALSE}
+library(tidytext)
+library(topicmodels)
+# find document-word counts
+
+word_counts = tidy_book %>%
+  count(chapter, word, sort = TRUE)
+
+#word_counts
+
+# cast into DTM
+book_dtm = word_counts %>%
+  filter(!grepl('’', word)) %>%
+  cast_dtm(chapter, word, n)
+
+#book_dtm
+
+# create 3 topics with LDA
+book_lda = LDA(book_dtm, k = 3, control = list(seed = 1234))
+```
+
+## Topic modeling
+
+```{r echo=FALSE, collapse=TRUE, warning=FALSE}
+# per-topic-per-word probabilities
+tidy_book_topics = tidy(book_lda, matrix = "beta")
+#tidy_book_topics
+
+# top 10 terms within each topic
+top_terms <- tidy_book_topics %>%
+  group_by(topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+#top_terms
+
+
+# visualize top terms
+top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(term, beta, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  scale_fill_manual(values=c("#c5bffb", "#fec4a3", "#99c1bb"))+
+  facet_wrap(~ topic, scales = "free") +
+  coord_flip() +
+  scale_x_reordered()
+
+```
+
+## Topic modeling
+
+After a deep analysis, we can suppose that these are the hidden topics:
+
+* <span style="color:#c5bffb"> the hate and disdain of humans on martians and other humans </span> 
+* <span style="color:#fec4a3"> the family and Earth nostalgia </span> 
+* <span style="color:#4B554B"> the larks on expeditions and explorations on Mars </span> 
+
+## Topic modeling
+
+*Each document is a mixture of topics*
+
+LDA permits also to model each chapter as a mixture of topics.
+
+We can examine the per-document-per-topic probabilities, called **gamma**.
+
+Using the three topics found previously, let's visualize the most present topic for each chapter.
+
+## Topic modeling
+
+```{r echo=FALSE, collapse=TRUE, warning=FALSE, fig.width=8}
+book_topics_gamma <- tidy(book_lda, matrix = "gamma")
+chapters_gamma <- book_topics_gamma %>%
+  separate(document, c("title"), sep = "_", convert = TRUE)
+
+top_topics_chapters_gamma <- chapters_gamma %>% 
+  group_by(title) %>%
+  top_n(1,gamma) %>%
+  arrange(factor(title, levels = indexes[,1]))
+
+top_topics_chapters_gamma = transform(top_topics_chapters_gamma, topic = as.character(topic))
+
+# chapters_gamma %>%
+#   ggplot(aes(factor(topic), gamma)) +
+#   geom_boxplot() +
+#   facet_wrap(~ title, scales = "free_y") +
+#   labs(x = "topic", y = expression(gamma)) +
+#   theme_classic()
+
+# ggplot(top_topics_chapters_gamma, aes(x=title, y=gamma, fill=topic)) +
+#   geom_bar(stat="identity")+
+#   theme(axis.text.x = element_text(angle = 90))
+
+xform_Noax <- list(
+  categoryorder = "array",
+  categoryarray = unique(indexes[,1]),
+  zeroline = FALSE,
+  showline = FALSE,
+  showticklabels = FALSE,
+  showgrid = FALSE,
+  title="chapter"
+)
+
+fig <- plot_ly(top_topics_chapters_gamma, x = ~title, y = ~gamma, type = 'bar', color = ~topic, colors = c("#c5bffb", "#fec4a3", "#99c1bb"))
+fig = fig %>% layout(xaxis = xform_Noax,  legend=list(title=list(text='<b> Topic </b>')))
+
+fig
+```
+
+## Topic modeling
+
+By using the **gamma**, we can see that most of the chapters have a clear topic. 
+
+Then, we can see that the *third* topic is mostly treated at the beginning of the book and the the *second* topic from the middle until the end of the book. 
+
+After that, the *first* topic appears nearly periodically in the book. 
+
+## Draw someone's own conclusions
+
+This deep analysis on The Martian Chronicles book permits us to **understand** better the content and the **sentiments** transmitted by the book. 
+
+We initially extracted the **shallow topics** using some basic text mining techniques and then more **hidden subjects** using advanced text mining techniques as the LDA model. 
+
+Furthermore, we also had the opportunity to find the **ties** between the chapters of the book, which it was really interesting since the stories of the chapters had already appeared before the creation of the book, so the bonds between them weren't that clear. 
+
+
+
+
+
+
+
