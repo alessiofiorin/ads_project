@@ -74,7 +74,7 @@ image_scale(image_scale(img,"70%"),"70%")
 
 The analyzed version book is the trade paperback edition published by Bantam Books with illustrations by Ian Miller. 
 
-It is composed of 26 chapter. Note that the complete version has 28 chapters, but it is not available since two chapters weren't considered for this novel.
+It is composed of 26 chapters. Note that the complete version has 28 chapters, but it is not available since two chapters weren't considered for this novel.
 
 These chapters are:
 
@@ -957,6 +957,8 @@ This deep analysis on The Martian Chronicles book permits us to **understand** b
 We initially extracted the **shallow topics** using some basic text mining techniques and then more **hidden subjects** using advanced text mining techniques as the LDA model. 
 
 Furthermore, we also had the opportunity to find the **ties** between the chapters of the book, which it was really interesting since the stories of the chapters had already appeared before the creation of the book, so the bonds between them weren't that clear. 
+
+<!-- VGhhbmtzIEF1cm9yYSBmb3IgdGhlIGJvb2sgOik= -->
 
 
 
