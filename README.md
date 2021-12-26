@@ -1,4 +1,6 @@
 # The Martian Chronicles
-## A deep dive in a science novel
+*A deep dive in a science novel*
 
-My project for the *Advanced Data Science* course, University of Udine, 2021, January 17^{th}
+This is my project for the *Advanced Data Science* course
+University of Udine
+January 17, 2022
