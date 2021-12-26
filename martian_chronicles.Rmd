@@ -34,7 +34,7 @@ The Martian Chronicles is a science fiction fix-up novel written by Ray Bradbury
 
 The novel is written as a chronicle and each story is a chapter within an overall chronological ordering of the plot. 
 
-It was not specifically written to be a single since its creation as a novel was suggest by a publisher's editor after most of the stories had already appeared.
+It was not specifically written to be a single since its creation as a novel was suggested by a publisher after most of the stories had already appeared.
 
 The book treats the exploration and settlement of Mars by Americans leaving a troubled Earth which it will be devastated by a nuclear war.
 
@@ -74,7 +74,7 @@ image_scale(image_scale(img,"70%"),"70%")
 
 The analyzed version book is the trade paperback edition published by Bantam Books with illustrations by Ian Miller. 
 
-It is composed of 26 chapters. Note that the complete version has 28 chapters, but it is not available since two chapters weren't considered for this novel.
+It is composed of 26 chapters. Note that the complete version has 28 chapters, but it is not available since two chapters weren't considered for this novel version.
 
 These chapters are:
 
@@ -478,7 +478,7 @@ In addition to be the most used word in the book, **captain** is also an importa
 
 Let's focus now on the **teece** term which it appears on the top two of the rankings in both centrality measurements chosen. 
 
-Note that this term is not one of the most appeared word in the book, so it is not true that whether a word is very used, then it is important. 
+<!-- Note that this term is not one of the most appeared word in the book, so it is not true that whether a word is very used, then it is important.  -->
 
 ```{r}
 tidy_book %>% filter(word=="captain" | word=="teece") %>% count(word) %>% rmarkdown::paged_table()
@@ -545,7 +545,7 @@ Previously we found the most used bigrams which they were the main characters in
 
 Let's understand if there is something more tied between these chapters than just the presence of common characters.
 
-Thus, let's visualize the **correlation plot** of the eight chapter select during this previous phase.
+Thus, let's visualize the **correlation plot** of the eight chapters selected during this previous phase.
 
 
 ## Correlation between chapters
@@ -623,7 +623,7 @@ After that, the first two chapters named previously also have an high correlatio
 
 *August 1999: THE EARTH MEN & April 2026: THE LONG YEARS*
 
-The common tie is the insanity. In chapter August 1999: THE EARTH MEN, some martianss became vulnerable since using their telepathy against the humans have an unintended consequence of mental insanity. 
+The common tie is the insanity. In chapter August 1999: THE EARTH MEN, some martians became vulnerable since using their telepathy against the humans have an unintended consequence of mental insanity. 
 
 In the other chapter, humans use robots to have around them their family lost in war, but this choice brought a sort of madness on them, since they can't accept the death of their loved ones.
 
@@ -814,7 +814,7 @@ Topic modeling will help us to discovery the hidden semantic structure of the ch
 
 ## Topic modeling
 
-Let's use LDA is a method for fitting a topic model. It handles each chapter as a mixture of topics, and each topic as a mixture of words. 
+Let's use LDA, which it is a method for fitting a topic model. It handles each chapter as a mixture of topics, and each topic as a mixture of words. 
 
 For each chapter we will select the most present topic, in order to understand easily the main topic for each of them.
 
