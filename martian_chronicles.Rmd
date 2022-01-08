@@ -210,8 +210,6 @@ Let's analyse the bigrams in order to find the main characters in The Martian Ch
 
 We can find the characters appearing in the chapters, thus we can understand if some chapters are **linked** together. 
 
-Remember that The Martian Chronicles consists of short stories previously published, which the common context is the exploration and colonization of **Mars** by **Americans** and the explicit common thread is the **time series** expressed on the chapters.
-
 ## Bigram analysis
 
 ```{css, echo=FALSE}
