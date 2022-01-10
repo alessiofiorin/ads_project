@@ -98,7 +98,7 @@ After that, the words with a similar frequency, besides the alike font size and 
 ## Word frequency
 
 ```{r , echo=FALSE, collapse=TRUE, warning=FALSE,message=FALSE}
-#First, we want to organize the book in a tibble composed of a tibble with two column: chapter and line row. For having the tidy book, we tokenize, so we have one word per row and then we remove the stop words. At this point, let plot the word frequency
+#First, we want to organize the book in a tibble composed of a tibble with two column: chapter and line row. For having the tidy book, we tokenize, so we have one word per row and then we remove the stop words. At this point, let's plot the word frequency
 
 
 indexes= read.delim("Ray Bradbury - The Martian Chronicles (1979, Bantam Books).txt", encoding="UTF-8", skip=45, nrows=26)
@@ -140,6 +140,7 @@ tidy_book <- book %>%
   arrange(factor(chapter, levels = indexes[,1])) 
 
 
+# 12 words per row, so 120 words
 sections_value = c(1)
 chapter_value=tidy_book$chapter[1]
 actual_value=1
@@ -166,22 +167,6 @@ tidy_book$section = sections_value
 tidy_book <- tidy_book %>%
   anti_join(stop_words)
 
-
-# word frequency
-# tidy_book %>%
-#   filter(word!="it's" || word!="it's" || word!="i'm")  %>%
-#   count(word, sort = TRUE) 
-
-# plot word frequency
-# tidy_book %>%
-#   count(word, sort = TRUE) %>%
-#   filter(n > 100) %>%
-#   mutate(word = reorder(word, n)) %>%
-#   ggplot(aes(word, n)) +
-#   geom_col() +
-#   xlab(NULL) +
-#   coord_flip()
-
 set.seed(1234)
 tidy_book %>%
   anti_join(stop_words) %>%
@@ -189,10 +174,6 @@ tidy_book %>%
   count(word) %>%
   # evaluate an R expression in an environment constructed from data
   with(wordcloud(words = word, freq = n, min.freq = 1, max.words=50, random.order=FALSE, rot.per=0.35, colors=brewer.pal(8, "Dark2")))
-
-
-
-
 ```
 
 ## Word frequency
@@ -224,12 +205,6 @@ We can find the characters appearing in the chapters, thus we can understand if 
 book_bigrams <- book %>%
   unnest_tokens(bigram, line_row, token = "ngrams", n = 2)
 
-#book_bigrams
-
-# count bigrams
-# book_bigrams %>%
-#   count(bigram, sort = TRUE)
-
 # remove stop words
 bigrams_separated <- book_bigrams %>%
   separate(bigram, c("word1", "word2"), sep = " ")
@@ -242,20 +217,11 @@ bigrams_filtered <- bigrams_separated %>%
 bigram_counts <- bigrams_filtered %>% 
   count(word1, word2, sort = TRUE)
 
-# bigram_counts
-
 # back to bigrams
 bigrams_united <- bigrams_filtered %>%
   unite(bigram, word1, word2, sep = " ")
 
 # bigrams_united
-
-# bigrams_united %>% 
-#   distinct() %>%
-#   group_by(bigram) %>%
-#   count(bigram, sort=TRUE)
-
-
 
 bigrams_for_plot = bigrams_united %>% 
   filter(bigram=="captain wilder" | bigram=="captain john" | bigram=="john black" | bigram=="samuel teece" | bigram=="sam parkhill" | bigram=="walter gripp"| bigram=="captain black" | bigram=="captain williams" | bigram=="miss blunt" | bigram=="nathaniel york") %>%
@@ -269,20 +235,6 @@ bigrams_plot <- plot_ly(bigrams_for_plot, x = ~chapter, y = ~n, type = 'bar', co
 bigrams_plot <- bigrams_plot %>% layout(yaxis = list(title = 'number of bigrams'), barmode = 'stack', xaxis = xform)
 
 bigrams_plot
-
-
-#make_matrix <- function(df,rownames = NULL){
- # my_matrix <-  as.matrix(df)
-#  if(!is.null(rownames))
-#    rownames(my_matrix) = rownames
-#  my_matrix
-#}
-
-#my_matrix <- make_matrix(select(my_tibble,-row_name),
-   #                       pull(my_tibble,row_name))
-
-
-
 ```
 </div>
 
@@ -375,19 +327,10 @@ The other words are painted in <span style="color:#E97451">orange</span>.
 ## Pairwise correlation graph
 
 ```{r, echo=FALSE, collapse=TRUE, warning=FALSE,message=FALSE}
-
-
-#stemming_word_cors <- word_cors %>%
-#  mutate(item1 = wordStem(item1), item2 = wordStem(item2)) # stemming
-
-
-
 g = word_cors %>%
   filter(!( grepl('’', item1) &&  grepl('’', item2)), correlation > .21) %>%
   as_tbl_graph() %>%
-  ggraph(layout = "fr") 
-
-
+  ggraph(layout = "fr")
 
 mcolor <- g$data %>% mutate(mcolor = if_else(name %in% c("captain", "mars", "martian", "earth"), 
                                      "#4D90CE", "#E97451")) %>% select(mcolor)
@@ -401,7 +344,6 @@ g +
   geom_edge_link(aes(edge_alpha = correlation), show.legend = FALSE, arrow = a) +
   geom_node_point(colour=mcolor$mcolor, size = 5)+
   theme_void() + theme(legend.position="none")
-  
 ```
  
 ## Pairwise correlation graph
@@ -426,8 +368,6 @@ We will use the **betweenness centrality** and the **PageRank centrality**.
 Let's apply the betweeness centrality.
 
 ```{r, echo=FALSE, include=FALSE, collapse=TRUE, warning=FALSE}
-
-
 word_cor_g <- word_cors %>%
   rename(word1 = item1, word2 = item2, n = correlation) %>%
   mutate(n = round(n*100)) %>%
@@ -453,12 +393,10 @@ pr <- page_rank(g)
 pagerank <- data.frame(score = pr$vector) %>%
   arrange(desc(score)) %>%
   head()
-
 ```
 
 ```{r , echo=FALSE, warning=FALSE, collapse=FALSE}
 betweenness %>% rmarkdown::paged_table()
-
 ```
 
 ## Centrality measurements
@@ -467,7 +405,6 @@ Let's apply the PageRank centrality.
 
 ```{r , echo=FALSE, warning=FALSE, collapse=FALSE}
 pagerank %>% mutate(score = round(score, 5)) %>% rmarkdown::paged_table()
-
 ```
 
 ## Centrality measurements
@@ -549,8 +486,6 @@ Thus, let's visualize the **correlation plot** of the eight chapters selected du
 ## Correlation between chapters
 
 ```{r , echo=FALSE, collapse=TRUE, warning=FALSE, fig.width=5.5, fig.height=5.5, fig.align='center'}
-
-
 frequency <- tidy_book %>%
   count(chapter, word, sort = TRUE) %>%
   group_by(chapter) %>%
@@ -594,15 +529,9 @@ COL2 = function(diverging = c('RdBu', 'BrBG', 'PiYG', 'PRGn', 'PuOr', 'RdYlBu'),
 
 }
 
-
 frequency_matrix %>%
   corrplot(method = 'circle', type = 'lower', insig='blank',
          addCoef.col ='black', number.cex = 0.8, order = 'AOE', diag=FALSE)
-  
-
-
-
-
 ```
 
 ## Correlation between chapters
@@ -656,20 +585,10 @@ book_sentiment <- tidy_book %>%
   spread(sentiment, n, fill = 0) %>%
   mutate(sentiment = positive - negative)
 
-#book_sentiment
-
-
-# lexicons
-#get_sentiments("bing")
-#get_sentiments("afinn")
-#get_sentiments("nrc")
-
 bing_word_counts <- tidy_book %>%
   inner_join(get_sentiments("bing")) %>%
   count(word, sentiment, sort = TRUE) %>%
   ungroup()
-
-#bing_word_counts
 
 p = bing_word_counts %>%
   top_n(10) %>%
@@ -736,8 +655,6 @@ most_frequent_sentiment_words <- function(bing_kind, sentimentwords, famous_sent
     arrange(factor(chapter, levels = indexes[,1])) %>%
     mutate(id_chapter = row_number()) 
   
-  #print(count_sentiment_words_per_chapter)
-  
   p <- count_sentiment_words_per_chapter %>%
   ggplot(aes(id_chapter, ratio, text = paste0("Chapter: ", chapter),
                              fill=factor(ifelse(chapter==famous_sentiment_chapter,"Best","Normal")))) +
@@ -758,9 +675,6 @@ most_frequent_sentiment_words <- function(bing_kind, sentimentwords, famous_sent
            yaxis = list(fixedrange = TRUE))
   
 }
-
-
-
 ```
 
 ```{r}
@@ -839,14 +753,10 @@ library(topicmodels)
 word_counts = tidy_book %>%
   count(chapter, word, sort = TRUE)
 
-#word_counts
-
 # cast into DTM
 book_dtm = word_counts %>%
   filter(!grepl('’', word)) %>%
   cast_dtm(chapter, word, n)
-
-#book_dtm
 
 # create 3 topics with LDA
 book_lda = LDA(book_dtm, k = 3, control = list(seed = 1234))
@@ -865,9 +775,6 @@ top_terms <- tidy_book_topics %>%
   top_n(10, beta) %>%
   ungroup() %>%
   arrange(topic, -beta)
-
-#top_terms
-
 
 # visualize top terms
 top_terms %>%
@@ -912,17 +819,6 @@ top_topics_chapters_gamma <- chapters_gamma %>%
   arrange(factor(title, levels = indexes[,1]))
 
 top_topics_chapters_gamma = transform(top_topics_chapters_gamma, topic = as.character(topic))
-
-# chapters_gamma %>%
-#   ggplot(aes(factor(topic), gamma)) +
-#   geom_boxplot() +
-#   facet_wrap(~ title, scales = "free_y") +
-#   labs(x = "topic", y = expression(gamma)) +
-#   theme_classic()
-
-# ggplot(top_topics_chapters_gamma, aes(x=title, y=gamma, fill=topic)) +
-#   geom_bar(stat="identity")+
-#   theme(axis.text.x = element_text(angle = 90))
 
 xform_Noax <- list(
   categoryorder = "array",
