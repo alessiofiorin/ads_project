@@ -852,8 +852,6 @@ We initially extracted the **shallow topics** using some basic text mining techn
 
 Furthermore, we also had the opportunity to find the **ties** between the chapters of the book, which it was really interesting since the stories of the chapters had already appeared before the creation of the book, so the bonds between them weren't that clear. 
 
-<!-- VGhhbmtzIEF1cm9yYSBmb3IgdGhlIGJvb2sgOik= -->
-
 
 
 
